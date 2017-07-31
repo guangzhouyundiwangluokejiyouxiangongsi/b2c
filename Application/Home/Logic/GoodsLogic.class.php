@@ -262,12 +262,14 @@ class GoodsLogic extends RelationModel
        return array('status'=>1,'msg'=>'收藏成功!请到个人中心查看','result'=>array()); 
    }
 
+
    /**
     * 获取商品规格
     */
    public function get_spec($goods_id){
 	   	//商品规格 价钱 库存表 找出 所有 规格项id
 	   	$keys = M('SpecGoodsPrice')->where("goods_id = $goods_id")->getField("GROUP_CONCAT(`key` SEPARATOR '_') ");
+      return $keys;
 	   	$filter_spec = array();
 	   	if($keys)
 	   	{

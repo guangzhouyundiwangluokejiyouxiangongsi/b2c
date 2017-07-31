@@ -42,6 +42,7 @@ class GoodsController extends BaseController {
         $goods_attribute = M('GoodsAttribute')->getField('attr_id,attr_name'); // 查询属性
         $goods_attr_list = M('GoodsAttr')->where("goods_id = $goods_id")->select(); // 查询商品属性表                        
 		$filter_spec = $goodsLogic->get_spec($goods_id);
+        dump($filter_spec);
                 
         //商品是否正在促销中        
         if($goods['prom_type'] == 1)

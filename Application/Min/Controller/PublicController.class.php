@@ -5,7 +5,7 @@ use Think\Controller;
 class PublicController extends Controller 
 {
 
-	public $data = array();
+	protected $data = array();
 
 	public function _initialize()
 	{
@@ -20,17 +20,25 @@ class PublicController extends Controller
 	protected function storedata()
 	{
 		$store = M('store')->where(array('store_id'=>STORE_ID))->find();
-		$store['shuffling']['img'] = explode(',', $store['store_slide']);//轮播图图片
-		$store['shuffling']['url'] = explode(',', $store['store_slide_url']);//轮播图链接
+		$imgs = array_filter(explode(',', $store['store_slide']));//轮播图图片
+		$url = array_filter(explode(',', $store['store_slide_url']));//轮播图链接
+		foreach($imgs as $k=>$v){
+			$img[ $k ]['img'] = $v;
+			$img[$k]['url'] = $url[$k];
+		}
+		$store['shuffling'] = $img;
 		$this->data['store'] = $store;
 		
 	}
 
 
-	public function _after_index()
+	public function __destruct()
 	{
-		// echo json_encode($this->data);
-		dump($this->data);
+		// dump(M());
+		
+		// $this->display();
+		echo json_encode($this->data);
+		// echo '<pre>';print_r($this->data);
 	}
 
 
