@@ -20,6 +20,10 @@ class PublicController extends Controller
 	protected function storedata()
 	{
 		$store = M('store')->where(array('store_id'=>STORE_ID))->find();
+
+		$store['province'] = M('region')->where(array('id'=>$store['province_id']))->getField('name');
+		$store['city'] = M('region')->where(array('id'=>$store['city_id']))->getField('name');
+		$store['districts'] = M('region')->where(array('id'=>$store['district']))->getField('name');
 		$imgs = array_filter(explode(',', $store['store_slide']));//轮播图图片
 		$url = array_filter(explode(',', $store['store_slide_url']));//轮播图链接
 		foreach($imgs as $k=>$v){
@@ -35,7 +39,6 @@ class PublicController extends Controller
 	public function __destruct()
 	{
 		// dump(M());
-		
 		// $this->display();
 		echo json_encode($this->data);
 		// echo '<pre>';print_r($this->data);
@@ -44,7 +47,9 @@ class PublicController extends Controller
 
 
 
-
+ 
 
 
 }
+
+

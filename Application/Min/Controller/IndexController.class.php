@@ -67,10 +67,12 @@ class IndexController extends PublicController
 		$id = I('id');
 		if(!$id){return;}
 		//商品基本信息
-		$this->data['goods'] = M('goods')->where(array('store_id'=>STORE_ID,'goods_id'=>$id))->find();
+		$goods = M('goods')->where(array('store_id'=>STORE_ID,'goods_id'=>$id))->find();
+		$goods['goods_content'] = htmlspecialchars_decode($goods['goods_content']);
+		$this->data['goods'] = $goods;
 
 		//相冊圖片
-		 $this->data['goodspoth'] = M('goods_images')->where(array('goods_id'=>$id))->getField('image_url',true);
+		 $this->data['goodsimg'] = M('goods_images')->where(array('goods_id'=>$id))->getField('image_url',true);
 
 
 		 //商品规格 spec_goods_price
@@ -84,6 +86,21 @@ class IndexController extends PublicController
         } 
         $this->data['attr'] = $goods_attr_list;
 
+
+        //相关推荐
+        $this->data['recommend'] = M('goods')->where("store_cat_id2 = ".$goods['store_cat_id2']." or store_cat_id1 = ".$goods['store_cat_id1']."")->order(' RAND()')->limit(4)->select();
+
+
+        //产品评论
+        $comment = M('comment as c')->field('u.head_pic,u.nickname,c.content,c.img,c.goods_rank,c.add_time')->where(array('goods_id'=>$goods['goods_id']))->join('__USERS__ as u on c.user_id=u.user_id')->limit(2)->order('c.add_time desc')->select();
+        foreach($comment as &$v){
+        	$v['img'] = explode(',', $v['img']);
+        	$v['add_time'] = date('Y-m-d H:i:s',$v['add_time']);
+        }
+        $this->data['comment'] = $comment;
+        // dump($this->data['comment']);
+
+
 	}
 
 
@@ -91,24 +108,68 @@ class IndexController extends PublicController
 	protected function specifications($goods_id)
 	{
 
-		$keys = M('SpecGoodsPrice')->where("goods_id = $goods_id")->getField("GROUP_CONCAT(`key` SEPARATOR '_') ");
+		$keys = M('spec_goods_price')->where("goods_id = $goods_id")->getField("GROUP_CONCAT(`key` SEPARATOR '_') ");
 		if($keys){
 			$keys = str_replace('_', ',', $keys);
-		}
 
-		$spec = M('spec')->field('')->join('__SPEC_item__ as item on __SPEC__.id = item.spec_id')->where('item.id in('.$keys.')')->order('__SPEC__.order');
+			// $spec = M('spec')->field('')->join('__SPEC_item__ as item on __SPEC__.id = item.spec_id')->where('item.id in('.$keys.')')->order('__SPEC__.order');
 		$spec = M()->query("SELECT a.name,a.order,b.* FROM __PREFIX__spec AS a INNER JOIN __PREFIX__spec_item AS b ON a.id = b.spec_id WHERE b.id IN($keys) ORDER BY a.order");
 
 		foreach($spec as $key => $val)
 	   		{
+
 	   			$filter_spec[$val['name']][] = array(
 	   					'item_id'=> $val['id'],
 	   					'item'=> $val['item'],
 	   					'src'=>$specImage[$val['id']],
+	   					'index' => pinyin($val['name'],'utf-8'),
+
 	   			);
 	   		}
+	   		$item_id = array();
+	   		$i == 0;
+	   		foreach($filter_spec as $k=>&$v){
+	   				foreach($v as $kk=>&$vv){
+	   					if($kk == 0){
+	   						$item_id[] = $vv['item_id'];//查询默认价格
+	   						$vv['checked'] = 1;//默认选中
+	   						$str .= pinyin($k,'utf-8').'_'.$vv['item_id'].'&&&';
+	   					}
+	   				}
 
+	   		}
+
+	   		sort($item_id);
+	   		$this->data['items'] = $str;
+	   		$this->data['price'] = M('spec_goods_price')->field('store_count,price,key')->where(array('key'=>implode('_',$item_id)))->find();
 	   		$this->data['specifications'] = $filter_spec;
+	   		// dump($filter_spec);
+
+		}
+
+		
+	}
+
+	//计算价格
+	public function price()
+	{
+		$items = I('items');
+		// file_put_contents('./test.html', $items);
+		$arr = explode('&amp;&amp;&amp;', $items);
+		foreach($arr as $k=>$v){
+			$s = explode('_', $v);
+			$array[$s[0]][] = array(
+					'item_id'=>$s['1'],
+				);
+		}
+		foreach($array as $vv){
+			if($vv[0]['item_id']){
+				$itemarr[] = $vv[0]['item_id'];
+			}
+		}
+		sort($itemarr);
+		$this->data['price'] = M('spec_goods_price')->field('store_count,price,key')->where(array('key'=>implode('_',$itemarr)))->find();
+
 	}
 
 
